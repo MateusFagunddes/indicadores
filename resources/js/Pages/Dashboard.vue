@@ -58,13 +58,13 @@ const applyFilters = () => {
               </select>
             </div>
 
-            <div v-if="user?.role === 'admin'" class="flex flex-col gap-1">
+            <!-- <div v-if="user?.role === 'admin'" class="flex flex-col gap-1">
               <label class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-300">Coordenador</label>
               <select v-model="filters.coordenador_id" @change="applyFilters" class="rounded-lg border border-slate-600 bg-slate-800 px-3 py-2 text-sm text-white" :title="filters.coordenador_id ? 'Filtro ativo: coordenador' : 'Todos'">
                 <option value="">Todos</option>
                 <option v-for="coordenador in coordenadores" :key="coordenador.id" :value="coordenador.id">{{ coordenador.name }}</option>
               </select>
-            </div>
+            </div> -->
 
             <div class="flex flex-col gap-1">
               <label class="text-[10px] font-semibold uppercase tracking-[0.2em] text-slate-300">Curso</label>
