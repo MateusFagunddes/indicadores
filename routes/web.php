@@ -3,6 +3,7 @@
 use App\Http\Controllers\IndicadorDashboardController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\LancamentoController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
@@ -13,6 +14,11 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
 	Route::post('/logout', [AuthController::class, 'destroy'])->name('logout');
 	Route::get('/', [IndicadorDashboardController::class, 'index'])->name('dashboard');
+
+	Route::get('/lancamentos', [LancamentoController::class, 'index'])->name('lancamentos');
+	Route::post('/lancamentos', [LancamentoController::class, 'store'])->name('lancamentos.store');
+	Route::put('/lancamentos/{lancamento}', [LancamentoController::class, 'update'])->name('lancamentos.update');
+	Route::delete('/lancamentos/{lancamento}', [LancamentoController::class, 'destroy'])->name('lancamentos.destroy');
 
 	Route::middleware('role:admin')->prefix('admin')->name('admin.')->group(function () {
 		Route::get('/users', [AdminController::class, 'users'])->name('users');

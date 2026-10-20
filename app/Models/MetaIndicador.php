@@ -9,8 +9,12 @@ class MetaIndicador extends Model
 {
     protected $table = 'metas_indicadores';
 
-    protected $fillable = ['indicador_id', 'unidade_id', 'curso_id', 'periodo_letivo_id', 'valor_meta'];
+    protected $fillable = ['indicador_id', 'unidade_id', 'curso_id',     'periodo_letivo_id', 'user_id', 'mes_ano', 'valor_meta'];
 
+        public function user(): BelongsTo
+        {
+            return $this->belongsTo(User::class);
+        }
     public function indicador(): BelongsTo
     {
         return $this->belongsTo(Indicador::class);

@@ -9,8 +9,8 @@ defineProps({
 </script>
 
 <template>
-  <main class="min-h-screen bg-slate-100 p-6">
-    <div class="mx-auto flex max-w-7xl gap-6">
+  <main class="min-h-screen bg-slate-100 p-[10px]">
+    <div class="flex gap-[10px]">
       <AppSidebar />
 
       <section class="min-w-0 flex-1 rounded-2xl border border-slate-200 bg-white p-8 shadow-sm">

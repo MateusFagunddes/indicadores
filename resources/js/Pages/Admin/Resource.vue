@@ -1,5 +1,5 @@
 <script setup>
-import { computed, watch } from 'vue';
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue';
 import { Link, router, useForm } from '@inertiajs/vue3';
 import AppSidebar from '../../Components/AppSidebar.vue';
 
@@ -67,6 +67,19 @@ const resetValues = (item = null) => {
 
 watch(() => [props.resource, props.editing, props.items], () => resetValues(editingItem.value), { immediate: true });
 
+const coordenadoresOpen = ref(false);
+const coordenadoresLabel = computed(() => {
+  const selected = props.coordenadores.filter((c) => form.coordenador_ids.includes(c.id));
+  if (selected.length === 0) return 'Selecione';
+  if (selected.length === 1) return selected[0].name;
+  return `Selecionados ${selected.length} de ${props.coordenadores.length}`;
+});
+const closeOnOutsideClick = (event) => {
+  if (!event.target.closest('[data-coordenadores-select]')) coordenadoresOpen.value = false;
+};
+onMounted(() => document.addEventListener('click', closeOnOutsideClick));
+onBeforeUnmount(() => document.removeEventListener('click', closeOnOutsideClick));
+
 const submit = () => {
   const options = { preserveScroll: true };
   if (editingItem.value) {
@@ -91,8 +104,8 @@ const displayValue = (item, key) => {
 </script>
 
 <template>
-  <main class="min-h-screen bg-slate-100 p-6">
-    <div class="mx-auto flex max-w-7xl gap-6">
+  <main class="min-h-screen bg-slate-100 p-[10px]">
+    <div class="flex gap-[10px]">
       <AppSidebar />
 
       <section class="min-w-0 flex-1 space-y-6">
@@ -117,19 +130,31 @@ const displayValue = (item, key) => {
           </div>
 
           <form class="mt-5 grid gap-4 md:grid-cols-2" @submit.prevent="submit">
-            <label v-for="field in definition.fields" :key="field.key" class="block">
+            <component :is="field.type === 'multiselect' ? 'div' : 'label'" v-for="field in definition.fields" :key="field.key" class="block">
               <span class="text-sm font-medium text-slate-700">{{ field.label }}</span>
               <select v-if="field.type === 'select'" v-model="form[field.key]" :required="field.required" class="mt-2 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-slate-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
                 <option value="">Selecione</option>
                 <option v-for="option in field.options" :key="option.value" :value="option.value">{{ option.label }}</option>
               </select>
-              <select v-else-if="field.type === 'multiselect'" v-model="form[field.key]" multiple class="mt-2 min-h-28 w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-slate-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
-                <option v-for="coordenador in coordenadores" :key="coordenador.id" :value="coordenador.id">{{ coordenador.name }}</option>
-              </select>
+              <div v-else-if="field.type === 'multiselect'" data-coordenadores-select class="relative mt-2">
+                <button type="button" class="flex w-full items-center justify-between rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-left text-slate-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20" :aria-expanded="coordenadoresOpen" @click="coordenadoresOpen = !coordenadoresOpen">
+                  <span class="truncate" :class="form.coordenador_ids.length ? '' : 'text-slate-500'">{{ coordenadoresLabel }}</span>
+                  <svg class="ml-2 h-4 w-4 shrink-0 text-slate-500 transition" :class="coordenadoresOpen ? 'rotate-180' : ''" viewBox="0 0 20 20" fill="currentColor"><path d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" /></svg>
+                </button>
+                <ul v-show="coordenadoresOpen" class="absolute z-20 mt-1 max-h-60 w-full overflow-auto rounded-xl border border-slate-200 bg-white py-1 shadow-lg">
+                  <li v-if="!coordenadores.length" class="px-3 py-2 text-sm text-slate-500">Nenhum coordenador cadastrado</li>
+                  <li v-for="coordenador in coordenadores" :key="coordenador.id">
+                    <label class="flex cursor-pointer items-center gap-2 px-3 py-2 text-sm text-slate-800 hover:bg-slate-100">
+                      <input v-model="form.coordenador_ids" type="checkbox" :value="coordenador.id" class="h-4 w-4 rounded border-slate-300 text-sky-500">
+                      {{ coordenador.name }}
+                    </label>
+                  </li>
+                </ul>
+              </div>
               <input v-else v-model="form[field.key]" :type="field.type" :required="field.required && !editingItem" class="mt-2 w-full rounded-xl border border-slate-300 px-3 py-2.5 text-slate-900 outline-none focus:border-sky-500 focus:ring-2 focus:ring-sky-500/20">
               <span v-if="field.hint" class="mt-1 block text-xs text-slate-500">{{ field.hint }}</span>
               <span v-if="form.errors[field.key]" class="mt-1 block text-sm text-rose-600">{{ form.errors[field.key] }}</span>
-            </label>
+            </component>
 
             <div class="md:col-span-2">
               <button type="submit" :disabled="form.processing" class="rounded-xl bg-sky-500 px-5 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-sky-400 disabled:cursor-not-allowed disabled:opacity-60">

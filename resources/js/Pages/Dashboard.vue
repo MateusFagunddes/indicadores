@@ -37,8 +37,8 @@ const applyFilters = () => {
 </script>
 
 <template>
-  <div class="min-h-screen bg-slate-100 p-6">
-    <div class="mx-auto flex max-w-7xl gap-6">
+  <div class="min-h-screen bg-slate-100 p-[10px]">
+    <div class="flex gap-[10px]">
       <AppSidebar />
 
       <div class="min-w-0 flex-1 space-y-6">
