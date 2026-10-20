@@ -22,8 +22,23 @@ class IndicadorService
         return round((($atual - $anterior) / $anterior) * 100, 2);
     }
 
-    public function statusMeta(float|int $realizado, float|int $meta): string
+    public function atendeMeta(float|int $realizado, float|int $meta, string $operador): bool
     {
+        return match ($operador) {
+            '>' => $realizado > $meta,
+            '<' => $realizado < $meta,
+            '=' => abs($realizado - $meta) < 0.005,
+            '<=' => $realizado <= $meta,
+            default => $realizado >= $meta,
+        };
+    }
+
+    public function statusMeta(float|int $realizado, float|int $meta, string $operador = '>='): string
+    {
+        if ($this->atendeMeta($realizado, $meta, $operador)) {
+            return 'Meta atingida';
+        }
+
         $atingimento = $this->calcularAtingimento($realizado, $meta);
 
         if ($atingimento >= 100) {

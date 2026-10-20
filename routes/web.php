@@ -4,6 +4,7 @@ use App\Http\Controllers\IndicadorDashboardController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\AdminController;
 use App\Http\Controllers\LancamentoController;
+use App\Http\Controllers\MetaController;
 use Illuminate\Support\Facades\Route;
 
 Route::middleware('guest')->group(function () {
@@ -33,5 +34,9 @@ Route::middleware('auth')->group(function () {
 		Route::post('/indicadores', [AdminController::class, 'storeIndicador'])->name('indicadores.store');
 		Route::put('/indicadores/{indicador}', [AdminController::class, 'updateIndicador'])->name('indicadores.update');
 		Route::delete('/indicadores/{indicador}', [AdminController::class, 'destroyIndicador'])->name('indicadores.destroy');
+		Route::get('/metas', [MetaController::class, 'index'])->name('metas');
+		Route::post('/metas', [MetaController::class, 'store'])->name('metas.store');
+		Route::put('/metas/{meta}', [MetaController::class, 'update'])->name('metas.update');
+		Route::delete('/metas/{meta}', [MetaController::class, 'destroy'])->name('metas.destroy');
 	});
 });

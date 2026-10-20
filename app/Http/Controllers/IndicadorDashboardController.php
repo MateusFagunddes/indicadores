@@ -5,7 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Curso;
 use App\Models\Indicador;
 use App\Models\PeriodoLetivo;
-use App\Models\RegistroIndicador;
+use App\Models\Meta;
+use App\Models\MetaIndicador;
 use App\Models\Unidade;
 use App\Models\User;
 use App\Services\IndicadorService;
@@ -50,7 +51,7 @@ class IndicadorDashboardController extends Controller
 
         $indicadores = Indicador::when($categoria, fn ($query) => $query->where('categoria', $categoria))->get();
 
-        $registros = RegistroIndicador::with(['indicador', 'unidade', 'curso', 'periodoLetivo'])
+        $registros = MetaIndicador::with(['indicador', 'unidade', 'curso', 'periodoLetivo'])
             ->when(! $user->isAdmin(), fn ($query) => $query->whereIn('curso_id', $cursoIds))
             ->when($user->isAdmin() && $coordenadorId, fn ($query) => $query->whereIn('curso_id', $cursos->pluck('id')))
             ->when($unidadeId, fn ($query) => $query->where('unidade_id', $unidadeId))
@@ -58,23 +59,22 @@ class IndicadorDashboardController extends Controller
             ->when($periodoLetivoId, fn ($query) => $query->where('periodo_letivo_id', $periodoLetivoId))
             ->get();
 
+        $metas = Meta::get()->keyBy('indicador_id');
+
         $lista = [];
 
         foreach ($indicadores as $indicador) {
             $indicadorRegistros = $registros->where('indicador_id', $indicador->id);
-            $valorRealizado = (float) $indicadorRegistros->sum('valor_realizado');
-            $meta = (float) (
-                $indicadorRegistros
-                    ->map(fn ($registro) => $registro->valor_realizado * 0.8)
-                    ->sum()
-            );
-
+            $valorRealizado = (float) $indicadorRegistros->sum('valor_meta');
+            $meta = (float) ($metas[$indicador->id]?->valor_meta ?? 0);
+            $operador = $metas[$indicador->id]?->operador ?? '>=';
             $lista[] = [
                 'indicador' => $indicador,
                 'valor_realizado' => $valorRealizado,
                 'meta' => $meta,
                 'atingimento' => $service->calcularAtingimento($valorRealizado, max($meta, 1)),
-                'status' => $service->statusMeta($valorRealizado, max($meta, 1)),
+                'operador' => $operador,
+                'status' => $service->statusMeta($valorRealizado, max($meta, 1), $operador),
             ];
         }
 

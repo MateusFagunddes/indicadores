@@ -6,7 +6,7 @@ use App\Models\Curso;
 use App\Models\Indicador;
 use App\Models\MetaIndicador;
 use App\Models\PeriodoLetivo;
-use App\Models\RegistroIndicador;
+use App\Models\Meta;
 use App\Models\Unidade;
 use App\Models\User;
 use Illuminate\Database\Seeder;
@@ -157,26 +157,7 @@ $cursos = [
         }
 
         foreach ($indicadorList as $indicador) {
-            foreach ($unidadeList as $unidade) {
-                foreach ($cursoList as $curso) {
-                    for ($mes = 1; $mes <= 12; $mes++) {
-                        RegistroIndicador::updateOrCreate(
-                            [
-                                'indicador_id' => $indicador->id,
-                                'unidade_id' => $unidade->id,
-                                'curso_id' => $curso->id,
-                                'periodo_letivo_id' => $periodoAtual->id,
-                                'mes' => $mes,
-                            ],
-                            [
-                                'valor_realizado' => fake()->randomFloat(2, 50, 1800),
-                                'observacoes' => 'Dados iniciais do dashboard',
-                            ]
-                        );
-                    }
-                }
-            }
+            Meta::firstOrCreate(['indicador_id' => $indicador->id], ['operador' => '>=', 'valor_meta' => random_int(100, 2000)]);
         }
     }
 }
-

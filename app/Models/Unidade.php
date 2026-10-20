@@ -13,9 +13,4 @@ class Unidade extends Model
     {
         return $this->hasMany(MetaIndicador::class);
     }
-
-    public function registrosIndicadores(): HasMany
-    {
-        return $this->hasMany(RegistroIndicador::class);
-    }
 }

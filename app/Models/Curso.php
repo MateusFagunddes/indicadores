@@ -15,11 +15,6 @@ class Curso extends Model
         return $this->hasMany(MetaIndicador::class);
     }
 
-    public function registrosIndicadores(): HasMany
-    {
-        return $this->hasMany(RegistroIndicador::class);
-    }
-
     public function coordenadores(): BelongsToMany
     {
         return $this->belongsToMany(User::class)->where('role', 'coordenador');

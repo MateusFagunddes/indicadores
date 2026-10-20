@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class Indicador extends Model
 {
@@ -16,8 +17,8 @@ class Indicador extends Model
         return $this->hasMany(MetaIndicador::class);
     }
 
-    public function registrosIndicadores(): HasMany
+    public function meta(): HasOne
     {
-        return $this->hasMany(RegistroIndicador::class);
+        return $this->hasOne(Meta::class);
     }
 }

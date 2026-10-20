@@ -17,6 +17,7 @@ const adminNavigation = [
   { label: 'Usuários', href: '/admin/users' },
   { label: 'Cursos', href: '/admin/cursos' },
   { label: 'Indicadores', href: '/admin/indicadores' },
+  { label: 'Metas', href: '/admin/metas' },
 ];
 
 const isActive = (href) => href === '/' ? page.url === '/' : page.url.startsWith(href);
