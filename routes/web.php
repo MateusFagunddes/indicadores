@@ -15,6 +15,8 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
 	Route::post('/logout', [AuthController::class, 'destroy'])->name('logout');
 	Route::get('/', [IndicadorDashboardController::class, 'index'])->name('dashboard');
+	Route::get('/dashboard-rotativo', [IndicadorDashboardController::class, 'rotativo'])->name('dashboard.rotativo');
+	Route::get('/indicadores/{indicador}/analitico', [IndicadorDashboardController::class, 'analitico'])->name('indicadores.analitico');
 
 	Route::get('/lancamentos', [LancamentoController::class, 'index'])->name('lancamentos');
 	Route::post('/lancamentos', [LancamentoController::class, 'store'])->name('lancamentos.store');

@@ -12,7 +12,11 @@ const toggleCollapsed = () => {
 const user = computed(() => page.props.auth?.user);
 const isAdmin = computed(() => user.value?.role === 'admin');
 
-const mainNavigation = [{ label: 'Dashboard', href: '/' }, { label: 'Lançamentos', href: '/lancamentos' }];
+const mainNavigation = [
+  { label: 'Dashboard', href: '/' },
+  { label: 'Painel TV', href: '/dashboard-rotativo' },
+  { label: 'Lançamentos', href: '/lancamentos' },
+];
 const adminNavigation = [
   { label: 'Usuários', href: '/admin/users' },
   { label: 'Cursos', href: '/admin/cursos' },

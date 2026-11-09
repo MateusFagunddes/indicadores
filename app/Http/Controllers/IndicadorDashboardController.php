@@ -72,7 +72,7 @@ class IndicadorDashboardController extends Controller
                 'indicador' => $indicador,
                 'valor_realizado' => $valorRealizado,
                 'meta' => $meta,
-                'atingimento' => $service->calcularAtingimento($valorRealizado, max($meta, 1)),
+                'atingimento' => $service->calcularAtingimento($valorRealizado, max($meta, 1), $operador),
                 'operador' => $operador,
                 'status' => $service->statusMeta($valorRealizado, max($meta, 1), $operador),
             ];
@@ -91,6 +91,161 @@ class IndicadorDashboardController extends Controller
             'coordenadores' => $coordenadores,
             'periodos' => $periodos,
             'indicadores' => $lista,
+        ]);
+    }
+
+    public function rotativo(Request $request, IndicadorService $service)
+    {
+        $user = $request->user();
+        $indicadores = Indicador::orderBy('nome')->get();
+        $metas = Meta::get()->keyBy('indicador_id');
+
+        $lancamentos = MetaIndicador::query()
+            ->select(['id', 'indicador_id', 'curso_id', 'mes_ano', 'valor_meta'])
+            ->with(['curso:id,nome'])
+            ->when(! $user->isAdmin(), fn ($query) => $query->whereIn('curso_id', $user->cursos()->select('cursos.id')))
+            ->get();
+
+        $porIndicador = $lancamentos->groupBy('indicador_id');
+
+        $lista = $indicadores->map(function (Indicador $indicador) use ($porIndicador, $metas, $service) {
+            $registros = $porIndicador->get($indicador->id, collect());
+
+            $labels = $registros->pluck('mes_ano')
+                ->unique()
+                ->sortBy(fn (string $mesAno) => substr($mesAno, 3, 4).substr($mesAno, 0, 2))
+                ->values()
+                ->all();
+
+            $datasets = $registros->groupBy('curso_id')
+                ->map(function ($registrosCurso, $cursoId) use ($labels) {
+                    $porMes = $registrosCurso->keyBy('mes_ano');
+
+                    return [
+                        'curso_id' => (int) $cursoId,
+                        'curso' => $registrosCurso->first()->curso?->nome ?? 'Curso '.$cursoId,
+                        'data' => array_map(
+                            fn (string $mesAno) => isset($porMes[$mesAno]) ? (float) $porMes[$mesAno]->valor_meta : null,
+                            $labels
+                        ),
+                    ];
+                })
+                ->sortBy('curso')
+                ->values()
+                ->all();
+
+            $valorRealizado = (float) $registros->sum('valor_meta');
+            $meta = (float) ($metas[$indicador->id]?->valor_meta ?? 0);
+            $operador = $metas[$indicador->id]?->operador ?? '>=';
+
+            return [
+                'indicador' => $indicador,
+                'labels' => $labels,
+                'datasets' => $datasets,
+                'valor_realizado' => $valorRealizado,
+                'meta' => $meta,
+                'operador' => $operador,
+                'atingimento' => $service->calcularAtingimento($valorRealizado, max($meta, 1), $operador),
+                'status' => $service->statusMeta($valorRealizado, max($meta, 1), $operador),
+            ];
+        });
+
+        return Inertia::render('DashboardRotativo', [
+            'indicadores' => $lista,
+            'intervaloRotacao' => 30,
+        ]);
+    }
+
+    public function analitico(Request $request, Indicador $indicador, IndicadorService $service)
+    {
+        $user = $request->user();
+        $ano = $request->query('ano');
+        $ano = is_string($ano) && preg_match('/^\d{4}$/', $ano) ? $ano : null;
+        $cursoId = $request->query('curso_id');
+        $acumulado = $request->boolean('acumulado');
+
+        $cursos = $user->isAdmin()
+            ? Curso::orderBy('nome')->get(['id', 'nome'])
+            : $user->cursos()->orderBy('nome')->get(['cursos.id', 'cursos.nome']);
+
+        if (! $user->isAdmin()) {
+            $cursoId = $cursoId && in_array((int) $cursoId, $cursos->modelKeys(), true) ? $cursoId : null;
+        }
+
+        $base = MetaIndicador::query()
+            ->select(['id', 'indicador_id', 'curso_id', 'mes_ano', 'valor_meta'])
+            ->with(['curso:id,nome'])
+            ->where('indicador_id', $indicador->id)
+            ->when(! $user->isAdmin(), fn ($query) => $query->whereIn('curso_id', $cursos->modelKeys()));
+
+        $anos = (clone $base)->pluck('mes_ano')
+            ->map(fn (string $mesAno) => substr($mesAno, 3, 4))
+            ->unique()
+            ->sortDesc()
+            ->values()
+            ->all();
+
+        $registros = (clone $base)
+            ->when($ano, fn ($query) => $query->where('mes_ano', 'like', '%/'.$ano))
+            ->when($cursoId, fn ($query) => $query->where('curso_id', $cursoId))
+            ->get();
+
+        $labels = $registros->pluck('mes_ano')
+            ->unique()
+            ->sortBy(fn (string $mesAno) => substr($mesAno, 3, 4).substr($mesAno, 0, 2))
+            ->values()
+            ->all();
+
+        $datasets = $registros->groupBy('curso_id')
+            ->map(function ($registrosCurso, $cursoId) use ($labels, $acumulado) {
+                $porMes = $registrosCurso->keyBy('mes_ano');
+                $totalAcumulado = 0.0;
+
+                $data = array_map(function (string $mesAno) use ($porMes, $acumulado, &$totalAcumulado) {
+                    $valor = isset($porMes[$mesAno]) ? (float) $porMes[$mesAno]->valor_meta : null;
+
+                    if (! $acumulado) {
+                        return $valor;
+                    }
+
+                    if ($valor !== null) {
+                        $totalAcumulado += $valor;
+                    }
+
+                    return $totalAcumulado;
+                }, $labels);
+
+                return [
+                    'curso_id' => (int) $cursoId,
+                    'curso' => $registrosCurso->first()->curso?->nome ?? 'Curso '.$cursoId,
+                    'data' => $data,
+                ];
+            })
+            ->sortBy('curso')
+            ->values()
+            ->all();
+
+        $meta = Meta::where('indicador_id', $indicador->id)->first();
+        $valorRealizado = (float) $registros->sum('valor_meta');
+        $valorMeta = (float) ($meta?->valor_meta ?? 0);
+        $operador = $meta?->operador ?? '>=';
+
+        return Inertia::render('IndicadorAnalitico', [
+            'indicador' => $indicador,
+            'filters' => [
+                'ano' => $ano,
+                'curso_id' => $cursoId,
+                'acumulado' => $acumulado,
+            ],
+            'anos' => $anos,
+            'cursos' => $cursos,
+            'labels' => $labels,
+            'datasets' => $datasets,
+            'meta' => $valorMeta,
+            'operador' => $operador,
+            'valor_realizado' => $valorRealizado,
+            'atingimento' => $service->calcularAtingimento($valorRealizado, max($valorMeta, 1), $operador),
+            'status' => $service->statusMeta($valorRealizado, max($valorMeta, 1), $operador),
         ]);
     }
 }
