@@ -35,6 +35,22 @@ class AuthenticationTest extends TestCase
         $this->assertGuest();
     }
 
+    public function test_login_ignores_email_case(): void
+    {
+        $user = User::factory()->create([
+            'email' => 'coordenador.ped@unideau.local',
+            'role' => 'coordenador',
+            'password' => 'password',
+        ]);
+
+        $this->post('/login', [
+            'email' => 'Coordenador.PED@Unideau.local',
+            'password' => 'password',
+        ])->assertRedirect('/');
+
+        $this->assertAuthenticatedAs($user);
+    }
+
     public function test_coordinator_has_only_related_courses(): void
     {
         $coordenador = User::factory()->create(['role' => 'coordenador']);

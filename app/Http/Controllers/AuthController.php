@@ -25,7 +25,8 @@ class AuthController extends Controller
             'password' => ['required', 'string'],
         ]);
 
-        $throttleKey = Str::transliterate(Str::lower($request->string('email')).'|'.$request->ip());
+        $email = Str::lower($credentials['email']);
+        $throttleKey = Str::transliterate($email.'|'.$request->ip());
 
         if (RateLimiter::tooManyAttempts($throttleKey, 5)) {
             throw ValidationException::withMessages([
@@ -33,7 +34,13 @@ class AuthController extends Controller
             ]);
         }
 
-        if (! Auth::attempt($credentials, $request->boolean('remember'))) {
+        // PostgreSQL diferencia maiúsculas de minúsculas; o MySQL local não.
+        $authCredentials = [
+            'email' => fn ($query) => $query->whereRaw('LOWER(email) = ?', [$email]),
+            'password' => $credentials['password'],
+        ];
+
+        if (! Auth::attempt($authCredentials, $request->boolean('remember'))) {
             RateLimiter::hit($throttleKey, 60);
 
             throw ValidationException::withMessages([

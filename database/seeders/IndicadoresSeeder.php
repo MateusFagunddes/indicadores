@@ -73,7 +73,7 @@ $cursos = [
             Curso::firstOrCreate($curso);
         }
 
-        $cursoAdministracao = Curso::where('nome', 'Administração')->firstOrFail();
+        $cursoAdministracao = Curso::where('nome', 'Administração + Ciências Contábeis')->firstOrFail();
         $cursoPedagogia = Curso::where('nome', 'Pedagogia')->firstOrFail();
 
         $admin = User::updateOrCreate(

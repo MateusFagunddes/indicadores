@@ -21,6 +21,19 @@ Laravel is a web application framework with expressive, elegant syntax. We belie
 
 Laravel is accessible, powerful, and provides tools required for large, robust applications.
 
+## Deploy no Render
+
+O deploy usa o [Dockerfile](Dockerfile) na raiz (PHP-FPM + Nginx, build dos assets Vite) com um banco PostgreSQL gerenciado.
+
+Variáveis de ambiente no Web Service:
+
+- `APP_ENV=production`, `APP_DEBUG=false`, `APP_KEY` (gerada com `php artisan key:generate --show`), `APP_URL` (URL pública do Render)
+- `DB_CONNECTION=pgsql`, `DB_URL` (string de conexão do PostgreSQL do Render), `DB_SSLMODE=require`
+- `SESSION_DRIVER=database`, `CACHE_STORE=database`, `QUEUE_CONNECTION=database`, `LOG_CHANNEL=stderr`
+- `RUN_SEEDERS=true` apenas se quiser rodar o `IndicadoresSeeder` no deploy (idempotente, mas redefine a senha dos usuários de exemplo para `password`)
+
+A cada deploy o `docker/start.sh` executa `migrate --force` e recria os caches do Laravel.
+
 ## Learning Laravel
 
 Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
